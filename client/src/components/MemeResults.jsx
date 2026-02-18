@@ -7,7 +7,6 @@ export default function MemeResults({ meme, gifs, webMemes }) {
 
   const tabs = [
     { id: "generated", label: "Generated Meme", icon: Sparkles },
-    { id: "gifs",      label: "GIF Reactions",  icon: Film },
     { id: "trending",  label: "Trending Memes",  icon: Globe },
   ];
 
@@ -43,48 +42,20 @@ export default function MemeResults({ meme, gifs, webMemes }) {
       {/* Generated Meme */}
       {activeTab === "generated" && meme && (
         <div className="glass rounded-2xl p-6">
-          {meme.meme?.url ? (
-            <div className="text-center">
-              <div className="inline-block rounded-2xl overflow-hidden shadow-2xl shadow-brand-900/30 max-w-lg">
-                <img
-                  src={meme.meme.url}
-                  alt={meme.meme.template?.name || "Generated meme"}
-                  className="w-full"
-                />
-              </div>
-              <div className="mt-4 space-y-2">
-                <p className="text-sm text-gray-400">
-                  Template: <span className="text-white">{meme.meme.template?.name}</span>
-                  {" • "}
-                  Mood: <span className="text-brand-300 capitalize">{meme.meme.mood}</span>
-                </p>
-                <div className="flex justify-center gap-3">
-                  <a
-                    href={meme.meme.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-sm text-brand-400 hover:text-brand-300"
-                  >
-                    <Download className="w-4 h-4" /> Download
-                  </a>
-                  {meme.meme.pageUrl && (
-                    <a
-                      href={meme.meme.pageUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-white"
-                    >
-                      <ExternalLink className="w-4 h-4" /> View on Imgflip
-                    </a>
-                  )}
-                </div>
-              </div>
+          <div className="text-center">
+            <div className="inline-block rounded-2xl overflow-hidden shadow-2xl shadow-brand-900/30 max-w-lg">
+              <img
+                src={meme.meme?.imageUrl}
+                alt={meme.meme?.template?.name || "Generated meme"}
+                className="w-full"
+              />
             </div>
-          ) : (
-            <div className="text-center py-8">
-              <Image className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-              <p className="text-gray-400 mb-2">Meme template selected:</p>
-              <p className="text-xl font-semibold text-white mb-2">{meme.meme?.template?.name}</p>
+            <div className="mt-4 space-y-2">
+              <p className="text-sm text-gray-400">
+                Template: <span className="text-white">{meme.meme?.template?.name}</span>
+                {" • "}
+                Mood: <span className="text-brand-300 capitalize">{meme.meme?.mood}</span>
+              </p>
               <div className="glass inline-block rounded-xl px-6 py-4 mt-3">
                 <p className="text-sm text-gray-300">
                   <span className="text-brand-400 font-medium">Top:</span> {meme.meme?.captions?.top}
@@ -93,48 +64,18 @@ export default function MemeResults({ meme, gifs, webMemes }) {
                   <span className="text-brand-400 font-medium">Bottom:</span> {meme.meme?.captions?.bottom}
                 </p>
               </div>
-              <p className="text-xs text-gray-500 mt-4">
-                Add Imgflip API credentials in <code>.env</code> to auto-generate meme images
-              </p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* GIF Results */}
-      {activeTab === "gifs" && (
-        <div className="glass rounded-2xl p-6">
-          {gifs?.gifs?.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {gifs.gifs.map((gif) => (
+              <div className="flex justify-center gap-3 mt-3">
                 <a
-                  key={gif.id}
-                  href={gif.originalUrl}
+                  href={meme.meme?.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group relative rounded-xl overflow-hidden bg-gray-800"
+                  className="inline-flex items-center gap-1.5 text-sm text-brand-400 hover:text-brand-300"
                 >
-                  <img
-                    src={gif.url}
-                    alt={gif.title}
-                    className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-300"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
-                    <p className="text-xs text-white line-clamp-2">{gif.title}</p>
-                  </div>
+                  <ExternalLink className="w-4 h-4" /> Create on Imgflip
                 </a>
-              ))}
+              </div>
             </div>
-          ) : (
-            <div className="text-center py-8">
-              <Film className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-              <p className="text-gray-400">{gifs?.message || "No GIFs found"}</p>
-              <p className="text-xs text-gray-500 mt-2">
-                Add a Giphy API key in <code>.env</code> to enable GIF search
-              </p>
-            </div>
-          )}
+          </div>
         </div>
       )}
 

@@ -5,12 +5,15 @@ import UploadSection from "./components/UploadSection";
 import AnalysisResults from "./components/AnalysisResults";
 import MemeResults from "./components/MemeResults";
 import TextInput from "./components/TextInput";
-import { analyzeScreenshot, analyzeText, generateMeme, searchGifs, fetchWebMemes } from "./api";
+import { extractText } from "./services/ocr";
+import { analyzeConversation } from "./services/analyzer";
+import { generateMeme, fetchWebMemes } from "./services/memeEngine";
 
 export default function App() {
   const [mode, setMode] = useState("upload"); // "upload" | "text"
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState("idle"); // "idle" | "analyzing" | "generating" | "done"
+  const [ocrProgress, setOcrProgress] = useState(0);
   const [analysisResult, setAnalysisResult] = useState(null);
   const [memeResult, setMemeResult] = useState(null);
   const [gifResults, setGifResults] = useState(null);
@@ -20,6 +23,7 @@ export default function App() {
 
   const reset = () => {
     setStep("idle");
+    setOcrProgress(0);
     setAnalysisResult(null);
     setMemeResult(null);
     setGifResults(null);
@@ -34,36 +38,53 @@ export default function App() {
     setStep("analyzing");
 
     try {
-      let result;
+      let ocrResult;
+
       if (typeof fileOrText === "string") {
-        result = await analyzeText(fileOrText);
+        // Direct text input — build synthetic OCR result
+        const messages = fileOrText.split("\n").filter(Boolean).map((t) => ({ text: t.trim(), type: "message" }));
+        ocrResult = { rawText: fileOrText, confidence: 100, messages, messageCount: messages.length };
       } else {
-        // Create preview URL
-        setPreview(URL.createObjectURL(fileOrText));
-        result = await analyzeScreenshot(fileOrText);
+        // Screenshot upload — run OCR in the browser
+        const previewUrl = URL.createObjectURL(fileOrText);
+        setPreview(previewUrl);
+        ocrResult = await extractText(previewUrl, setOcrProgress);
       }
+
+      if (!ocrResult.rawText) {
+        throw new Error("Could not extract any text. Try a clearer screenshot.");
+      }
+
+      // Run analysis (all client-side)
+      const analysis = analyzeConversation(ocrResult);
+
+      const result = {
+        success: true,
+        ocr: { text: ocrResult.rawText, confidence: ocrResult.confidence, messageCount: ocrResult.messageCount, messages: ocrResult.messages },
+        analysis,
+      };
 
       setAnalysisResult(result);
       setStep("generating");
 
-      // Fetch memes in parallel
-      const memeContext = result.analysis.memeContext;
-      const conversationText = result.ocr.text;
+      // Fetch memes
+      const memeContext = analysis.memeContext;
+      const conversationText = ocrResult.rawText;
 
-      const [meme, gifs, web] = await Promise.allSettled([
-        generateMeme(memeContext, conversationText),
-        searchGifs(memeContext),
-        fetchWebMemes(memeContext),
-      ]);
+      const meme = generateMeme(memeContext, conversationText);
+      setMemeResult(meme);
 
-      if (meme.status === "fulfilled") setMemeResult(meme.value);
-      if (gifs.status === "fulfilled") setGifResults(gifs.value);
-      if (web.status === "fulfilled") setWebMemes(web.value);
+      try {
+        const web = await fetchWebMemes(memeContext);
+        setWebMemes(web);
+      } catch {
+        // Non-critical — meme API may be unavailable
+      }
 
       setStep("done");
     } catch (err) {
       console.error(err);
-      setError(err.response?.data?.error || err.message || "Something went wrong");
+      setError(err.message || "Something went wrong");
       setStep("idle");
     } finally {
       setLoading(false);
@@ -121,7 +142,7 @@ export default function App() {
                 </p>
                 <p className="text-sm text-gray-400 mt-1">
                   {step === "analyzing"
-                    ? "Extracting text & detecting emotions"
+                    ? `Extracting text & detecting emotions${ocrProgress > 0 ? ` (${ocrProgress}%)` : ""}`
                     : "Finding the perfect meme response"}
                 </p>
               </div>
