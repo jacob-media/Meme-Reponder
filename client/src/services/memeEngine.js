@@ -1,7 +1,38 @@
 /**
  * Meme engine running entirely in the browser.
- * Uses free APIs that support CORS or returns template data.
+ * Uses verified Imgflip image URLs and free Reddit meme API.
  */
+
+// Verified image URLs from the Imgflip API (hash slugs, not numeric IDs)
+const IMAGE_URLS = {
+  "181913649": "https://i.imgflip.com/30b1gx.jpg",
+  "438680":    "https://i.imgflip.com/9ehk.jpg",
+  "91538330":  "https://i.imgflip.com/1ihzfe.jpg",
+  "4087833":   "https://i.imgflip.com/2fm6x.jpg",
+  "124822590": "https://i.imgflip.com/22bdq6.jpg",
+  "247375501": "https://i.imgflip.com/43a45p.png",
+  "97984":     "https://i.imgflip.com/23ls.jpg",
+  "180190441": "https://i.imgflip.com/2za3u1.jpg",
+  "87743020":  "https://i.imgflip.com/1g8my4.jpg",
+  "259237855": "https://i.imgflip.com/4acd7j.png",
+  "3218037":   "https://i.imgflip.com/1wz1x.jpg",
+  "61579":     "https://i.imgflip.com/1bij.jpg",
+  "1035805":   "https://i.imgflip.com/m78d.jpg",
+  "101470":    "https://i.imgflip.com/26am.jpg",
+  "61520":     "https://i.imgflip.com/1bgw.jpg",
+  "27813981":  "https://i.imgflip.com/gk5el.jpg",
+  "89370399":  "https://i.imgflip.com/1h7in3.jpg",
+  "100777631": "https://i.imgflip.com/1o00in.jpg",
+  "252600902": "https://i.imgflip.com/46e43q.png",
+  "93895088":  "https://i.imgflip.com/1jwhww.jpg",
+  "148909805": "https://i.imgflip.com/2gnnjh.jpg",
+  "188390779": "https://i.imgflip.com/345v97.jpg",
+  "119139145": "https://i.imgflip.com/1yxkcp.jpg",
+  "102156234": "https://i.imgflip.com/1otk96.jpg",
+  "131087935": "https://i.imgflip.com/261o3j.jpg",
+  "217743513": "https://i.imgflip.com/3lmzyx.jpg",
+  "222403160": "https://i.imgflip.com/3oevdk.jpg",
+};
 
 const MEME_TEMPLATES = {
   joy: [
@@ -82,13 +113,37 @@ const CAPTION_STRATEGIES = {
 };
 
 /**
- * Generate a meme locally — picks a template + captions based on mood.
+ * Resolve the actual image URL for a template ID.
  */
-export function generateMeme(memeContext, conversationText) {
+let _apiCache = null;
+
+async function resolveImageUrl(templateId) {
+  if (IMAGE_URLS[templateId]) return IMAGE_URLS[templateId];
+
+  // Fallback: fetch from Imgflip API and cache
+  if (!_apiCache) {
+    try {
+      const res = await fetch("https://api.imgflip.com/get_memes");
+      const data = await res.json();
+      if (data.success) {
+        _apiCache = {};
+        for (const m of data.data.memes) _apiCache[m.id] = m.url;
+      }
+    } catch { _apiCache = {}; }
+  }
+  return _apiCache?.[templateId] || null;
+}
+
+/**
+ * Generate a meme — picks a template + captions based on mood.
+ */
+export async function generateMeme(memeContext, conversationText) {
   const mood = memeContext.mood || "neutral";
   const templates = MEME_TEMPLATES[mood] || MEME_TEMPLATES.neutral;
   const template = templates[Math.floor(Math.random() * templates.length)];
   const base = CAPTION_STRATEGIES[mood] || CAPTION_STRATEGIES.neutral;
+
+  const imageUrl = await resolveImageUrl(template.id);
 
   const shortText =
     conversationText && conversationText.length > 5
@@ -108,8 +163,7 @@ export function generateMeme(memeContext, conversationText) {
       source: "template",
       template,
       captions,
-      url: `https://imgflip.com/meme/${template.id}`,
-      imageUrl: `https://i.imgflip.com/${template.id}.jpg`,
+      imageUrl,
       mood,
     },
   };

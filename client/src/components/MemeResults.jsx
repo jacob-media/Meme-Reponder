@@ -38,9 +38,9 @@ export default function MemeResults({ meme, gifs, webMemes, analysisContext }) {
     return () => { cancelled = true; };
   }, [currentMeme]);
 
-  const handleRegenerate = () => {
+  const handleRegenerate = async () => {
     if (!analysisContext) return;
-    const newMeme = generateNewMeme(analysisContext.memeContext, analysisContext.conversationText);
+    const newMeme = await generateNewMeme(analysisContext.memeContext, analysisContext.conversationText);
     setCurrentMeme(newMeme);
   };
 

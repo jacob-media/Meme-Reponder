@@ -71,7 +71,7 @@ export default function App() {
       const memeContext = analysis.memeContext;
       const conversationText = ocrResult.rawText;
 
-      const meme = generateMeme(memeContext, conversationText);
+      const meme = await generateMeme(memeContext, conversationText);
       setMemeResult(meme);
 
       try {
