@@ -179,6 +179,10 @@ export default function App() {
               meme={memeResult}
               gifs={gifResults}
               webMemes={webMemes}
+              analysisContext={{
+                memeContext: analysisResult.analysis.memeContext,
+                conversationText: analysisResult.ocr.text,
+              }}
             />
 
             {/* Reset Button */}

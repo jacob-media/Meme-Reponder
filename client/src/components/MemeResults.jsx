@@ -1,14 +1,54 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Sparkles, Image, Film, Globe, Download, ExternalLink } from "lucide-react";
+import { Sparkles, Image, Globe, Download, RefreshCw } from "lucide-react";
+import { renderMeme, downloadMeme } from "../services/memeRenderer";
+import { generateMeme as generateNewMeme } from "../services/memeEngine";
 
-export default function MemeResults({ meme, gifs, webMemes }) {
+export default function MemeResults({ meme, gifs, webMemes, analysisContext }) {
   const [activeTab, setActiveTab] = useState("generated");
+  const [renderedMemeUrl, setRenderedMemeUrl] = useState(null);
+  const [rendering, setRendering] = useState(false);
+  const [currentMeme, setCurrentMeme] = useState(meme);
 
   const tabs = [
     { id: "generated", label: "Generated Meme", icon: Sparkles },
     { id: "trending",  label: "Trending Memes",  icon: Globe },
   ];
+
+  // Automatically render the meme with captions baked into the image
+  useEffect(() => {
+    if (!currentMeme?.meme) return;
+    let cancelled = false;
+
+    async function render() {
+      setRendering(true);
+      setRenderedMemeUrl(null);
+      try {
+        const { imageUrl, captions } = currentMeme.meme;
+        const dataUrl = await renderMeme(imageUrl, captions.top, captions.bottom);
+        if (!cancelled) setRenderedMemeUrl(dataUrl);
+      } catch (err) {
+        console.error("Meme render failed:", err);
+      } finally {
+        if (!cancelled) setRendering(false);
+      }
+    }
+
+    render();
+    return () => { cancelled = true; };
+  }, [currentMeme]);
+
+  const handleRegenerate = () => {
+    if (!analysisContext) return;
+    const newMeme = generateNewMeme(analysisContext.memeContext, analysisContext.conversationText);
+    setCurrentMeme(newMeme);
+  };
+
+  const handleDownload = () => {
+    if (renderedMemeUrl) {
+      downloadMeme(renderedMemeUrl, `meme-${currentMeme.meme?.template?.name?.replace(/\s+/g, "-") || "response"}.png`);
+    }
+  };
 
   return (
     <motion.div
@@ -40,41 +80,57 @@ export default function MemeResults({ meme, gifs, webMemes }) {
       </div>
 
       {/* Generated Meme */}
-      {activeTab === "generated" && meme && (
+      {activeTab === "generated" && currentMeme && (
         <div className="glass rounded-2xl p-6">
           <div className="text-center">
-            <div className="inline-block rounded-2xl overflow-hidden shadow-2xl shadow-brand-900/30 max-w-lg">
-              <img
-                src={meme.meme?.imageUrl}
-                alt={meme.meme?.template?.name || "Generated meme"}
-                className="w-full"
-              />
-            </div>
-            <div className="mt-4 space-y-2">
-              <p className="text-sm text-gray-400">
-                Template: <span className="text-white">{meme.meme?.template?.name}</span>
-                {" • "}
-                Mood: <span className="text-brand-300 capitalize">{meme.meme?.mood}</span>
-              </p>
-              <div className="glass inline-block rounded-xl px-6 py-4 mt-3">
-                <p className="text-sm text-gray-300">
-                  <span className="text-brand-400 font-medium">Top:</span> {meme.meme?.captions?.top}
-                </p>
-                <p className="text-sm text-gray-300 mt-1">
-                  <span className="text-brand-400 font-medium">Bottom:</span> {meme.meme?.captions?.bottom}
-                </p>
+            {rendering ? (
+              <div className="py-12">
+                <div className="w-10 h-10 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                <p className="text-gray-400">Rendering your meme...</p>
               </div>
-              <div className="flex justify-center gap-3 mt-3">
-                <a
-                  href={meme.meme?.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-sm text-brand-400 hover:text-brand-300"
+            ) : renderedMemeUrl ? (
+              <>
+                <div className="inline-block rounded-2xl overflow-hidden shadow-2xl shadow-brand-900/30 max-w-lg">
+                  <img
+                    src={renderedMemeUrl}
+                    alt={currentMeme.meme?.template?.name || "Generated meme"}
+                    className="w-full"
+                  />
+                </div>
+                <div className="mt-4 space-y-3">
+                  <p className="text-sm text-gray-400">
+                    Template: <span className="text-white">{currentMeme.meme?.template?.name}</span>
+                    {" • "}
+                    Mood: <span className="text-brand-300 capitalize">{currentMeme.meme?.mood}</span>
+                  </p>
+                  <div className="flex justify-center gap-3">
+                    <button
+                      onClick={handleDownload}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-brand-600 hover:bg-brand-700 rounded-full text-sm font-semibold transition-all shadow-lg shadow-brand-600/30"
+                    >
+                      <Download className="w-4 h-4" /> Download Meme
+                    </button>
+                    <button
+                      onClick={handleRegenerate}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 glass rounded-full text-sm font-medium text-gray-300 hover:text-white transition-all"
+                    >
+                      <RefreshCw className="w-4 h-4" /> New Meme
+                    </button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="py-12">
+                <Image className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+                <p className="text-gray-400">Could not render meme. Try generating a new one.</p>
+                <button
+                  onClick={handleRegenerate}
+                  className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 bg-brand-600 hover:bg-brand-700 rounded-full text-sm font-semibold transition-all"
                 >
-                  <ExternalLink className="w-4 h-4" /> Create on Imgflip
-                </a>
+                  <RefreshCw className="w-4 h-4" /> Try Again
+                </button>
               </div>
-            </div>
+            )}
           </div>
         </div>
       )}
