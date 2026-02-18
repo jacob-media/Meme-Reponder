@@ -31,8 +31,15 @@ function drawMemeText(ctx, text, x, y, maxWidth, fontSize) {
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
 
-  // Word-wrap the text
-  const lines = wrapText(ctx, text.toUpperCase(), maxWidth);
+  // Word-wrap the text and cap at 3 lines to stay in safe zones
+  let lines = wrapText(ctx, text.toUpperCase(), maxWidth);
+  if (lines.length > 3) {
+    lines = lines.slice(0, 3);
+    // Add ellipsis to the truncated last line
+    lines[2] = lines[2].length > 3
+      ? lines[2].substring(0, lines[2].length - 3) + "..."
+      : lines[2];
+  }
 
   for (let i = 0; i < lines.length; i++) {
     const lineY = y + i * (fontSize * 1.15);
@@ -93,7 +100,13 @@ export async function renderMeme(imageUrl, topText, bottomText) {
   const h = canvas.height;
   const padding = w * 0.05;
   const maxWidth = w - padding * 2;
-  const fontSize = Math.max(Math.min(w / 12, 72), 24);
+
+  // Adaptive font sizing — shrink for longer captions to avoid overlap
+  const baseSize = Math.max(Math.min(w / 12, 72), 24);
+  const maxLen = Math.max((topText || "").length, (bottomText || "").length);
+  let fontSize = baseSize;
+  if (maxLen > 60) fontSize = Math.max(baseSize * 0.65, 18);
+  else if (maxLen > 40) fontSize = Math.max(baseSize * 0.8, 20);
 
   // Draw top text
   if (topText) {

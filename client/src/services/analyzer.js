@@ -27,7 +27,7 @@ export function analyzeConversation(ocrResult) {
     inflection,
     keywords,
     summary: generateSummary(sentimentResult, emotions, tone, themes),
-    memeContext: buildMemeContext(sentimentResult, emotions, tone, themes, keywords),
+    memeContext: buildMemeContext(sentimentResult, emotions, tone, themes, keywords, messages),
   };
 }
 
@@ -195,7 +195,7 @@ function generateSummary(sentiment, emotions, tone, themes) {
   return parts.join(" ");
 }
 
-function buildMemeContext(sentiment, emotions, tone, themes, keywords) {
+function buildMemeContext(sentiment, emotions, tone, themes, keywords, messages) {
   const parts = [];
   if (emotions.dominant !== "neutral") parts.push(emotions.dominant);
   parts.push(...tone.slice(0, 2));
@@ -206,6 +206,10 @@ function buildMemeContext(sentiment, emotions, tone, themes, keywords) {
     mood: emotions.dominant,
     sentiment: sentiment.label,
     tone: tone[0],
+    tones: tone,
+    themes,
+    keywords: keywords.all,
+    messages,
   };
 }
 
