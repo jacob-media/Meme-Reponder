@@ -1,0 +1,79 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Quicksand', sans-serif;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  min-height: 100vh;
+  color: white;
+}
+
+.drop-zone {
+  @apply border-4 border-dashed border-neon-blue rounded-3xl p-8 transition-all duration-300;
+}
+
+.drop-zone:hover {
+  @apply border-neon-pink bg-neon-pink/10;
+}
+
+.drop-zone.dragging {
+  @apply border-neon-yellow bg-neon-yellow/20 scale-105;
+}
+
+.magic-button {
+  @apply bg-gradient-to-r from-neon-pink via-neon-purple to-neon-blue 
+         text-white font-bold py-4 px-8 rounded-full text-xl
+         transform transition-all duration-300 
+         hover:scale-110 hover:shadow-2xl
+         active:scale-95;
+  background-size: 200% 200%;
+  animation: gradient-shift 3s ease infinite;
+}
+
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.card {
+  @apply bg-card-bg/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl;
+}
+
+.sentiment-bar {
+  @apply h-4 rounded-full transition-all duration-500;
+}
+
+.meme-card {
+  @apply bg-card-bg rounded-2xl overflow-hidden transform transition-all duration-300
+         hover:scale-105 hover:shadow-2xl cursor-pointer;
+}
+
+.loader {
+  @apply w-16 h-16 border-4 border-neon-blue border-t-neon-pink rounded-full;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a1a2e;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #FF6B9D, #4ECDC4);
+  border-radius: 4px;
+}
